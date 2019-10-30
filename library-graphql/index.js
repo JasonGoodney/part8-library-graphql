@@ -152,6 +152,8 @@ const typeDefs = gql`
 
     allAuthors: [Author!]!
 
+    findAuthor(name: String!): Author
+
     me: User
   }
 
@@ -204,6 +206,7 @@ const resolvers = {
       })
     },
     allAuthors: () => Author.find({}),
+    findAuthor: (root, args) => Author.findOne({ name: args.name }),
     me: (root, args, { currentUser }) => {
       return currentUser
     }
