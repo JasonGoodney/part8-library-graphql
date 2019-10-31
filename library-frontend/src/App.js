@@ -57,14 +57,13 @@ const ALL_BOOKS = gql`
     allBooks(genre: $genre) {
       title
       author {
-        ...AuthorDetails
+        name
       }
       published
       genres
       id
     }
   }
-  ${AUTHOR_DETAILS}
 `
 
 const ADD_BOOK = gql`
@@ -127,8 +126,16 @@ const App = () => {
   const [page, setPage] = useState('authors')
   const [errorMessage, setErrorMessage] = useState(null)
 
+  const notify = message => {
+    setErrorMessage(message)
+    setTimeout(() => {
+      setErrorMessage(null)
+    }, 10000)
+  }
+
   const handleError = error => {
-    setErrorMessage(error.graphQLErrors[0].message)
+    debugger
+    setErrorMessage(error.message || error.graphQLErrors[0].message)
     setTimeout(() => {
       setErrorMessage(null)
     }, 10000)
@@ -141,30 +148,8 @@ const App = () => {
   const [addBook] = useMutation(ADD_BOOK, {
     onError: handleError,
     update: async (store, response) => {
-      const bookDataInStore = store.readQuery({ query: ALL_BOOKS })
-      const authorDataInStore = store.readQuery({ query: ALL_AUTHORS })
-
-      const authorName = response.data.addBook.author.name
-      const author = client.query({
-        query: FIND_AUTHOR,
-        variables: { name: authorName }
-      })
-
-      bookDataInStore.allBooks.push(response.data.addBook)
-      authorDataInStore.allAuthors.map(a =>
-        a.name !== author.name ? a : author
-      )
-
-      store.writeData({
-        query: ALL_BOOKS,
-        data: bookDataInStore
-      })
-      store.writeData({
-        query: ALL_AUTHORS,
-        data: authorDataInStore
-      })
+      updateCacheWith(response.data.addBook)
     }
-    // refetchQueries: [{ query: ALL_BOOKS }, { query: ALL_AUTHORS }]
   })
 
   const [editAuthor] = useMutation(EDIT_AUTHOR)
@@ -174,9 +159,42 @@ const App = () => {
     onCompleted: () => setPage('authors')
   })
 
+  const updateCacheWith = async addedBook => {
+    const includedIn = (set, object) => set.map(b => b.id).includes(object.id)
+
+    const dataInStore = client.readQuery({ query: ALL_BOOKS })
+
+    if (!includedIn(dataInStore.allBooks, addedBook)) {
+      const authorName = addedBook.author.name
+
+      const authorQuery = await client.query({
+        query: FIND_AUTHOR,
+        variables: { name: authorName }
+      })
+
+      if (authorQuery.data && !includedIn(dataInStore.allBooks, addedBook)) {
+        const author = authorQuery.data.findAuthor
+
+        const book = {
+          ...addedBook,
+          author: { ...author, bookCount: author.bookCount + 1 || 1 }
+        }
+
+        dataInStore.allBooks.push(book)
+
+        client.writeQuery({
+          query: ALL_BOOKS,
+          data: dataInStore
+        })
+      }
+    }
+  }
+
   useSubscription(BOOK_ADDED, {
     onSubscriptionData: ({ subscriptionData }) => {
-      console.log(subscriptionData)
+      const addedBook = subscriptionData.data.bookAdded
+      notify(`${addedBook.title} added`)
+      updateCacheWith(addedBook)
     }
   })
 
