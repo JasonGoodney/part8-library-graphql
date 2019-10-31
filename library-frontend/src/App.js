@@ -172,7 +172,10 @@ const App = () => {
         variables: { name: authorName }
       })
 
-      if (authorQuery.data && !includedIn(dataInStore.allBooks, addedBook)) {
+      if (
+        authorQuery.data.findAuthor &&
+        !includedIn(dataInStore.allBooks, addedBook)
+      ) {
         const author = authorQuery.data.findAuthor
 
         const book = {
@@ -186,6 +189,15 @@ const App = () => {
           query: ALL_BOOKS,
           data: dataInStore
         })
+
+        const authorDataInStore = client.readQuery({ query: ALL_AUTHORS })
+        if (!includedIn(authorDataInStore.allAuthors, author)) {
+          authorDataInStore.allAuthors.push(author)
+          client.writeQuery({
+            query: ALL_AUTHORS,
+            data: authorDataInStore
+          })
+        }
       }
     }
   }
