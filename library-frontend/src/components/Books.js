@@ -42,8 +42,9 @@ const Books = ({ show, result, showGenres, allBooksQuery }) => {
             <th>author</th>
             <th>published</th>
           </tr>
-          {filteredBooks.map(a => (
+          {filteredBooks.map((a, i) => (
             <tr key={a.title}>
+              <td>{i + 1}</td>
               <td>{a.title}</td>
               <td>{a.author.name}</td>
               <td>{a.published}</td>
