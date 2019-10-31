@@ -1,6 +1,11 @@
 import React, { useState } from 'react'
 import { gql } from 'apollo-boost'
-import { useQuery, useMutation, useApolloClient } from '@apollo/react-hooks'
+import {
+  useQuery,
+  useMutation,
+  useApolloClient,
+  useSubscription
+} from '@apollo/react-hooks'
 import Authors from './components/Authors'
 import Books from './components/Books'
 import NewBook from './components/NewBook'
@@ -8,26 +13,43 @@ import LoginForm from './components/LoginForm'
 import EditAuthor from './components/EditAuthor'
 import Recommend from './components/Recommend'
 
+const ADDED_BOOK_DETAILS = gql`
+  fragment AddedBookDetails on Book {
+    title
+    author {
+      name
+    }
+    published
+    genres
+    id
+  }
+`
+
+const AUTHOR_DETAILS = gql`
+  fragment AuthorDetails on Author {
+    name
+    born
+    bookCount
+    id
+  }
+`
+
 const ALL_AUTHORS = gql`
   {
     allAuthors {
-      name
-      born
-      bookCount
-      id
+      ...AuthorDetails
     }
   }
+  ${AUTHOR_DETAILS}
 `
 
 const FIND_AUTHOR = gql`
   query findAuthor($name: String!) {
     findAuthor(name: $name) {
-      name
-      born
-      bookCount
-      id
+      ...AuthorDetails
     }
   }
+  ${AUTHOR_DETAILS}
 `
 
 const ALL_BOOKS = gql`
@@ -35,16 +57,14 @@ const ALL_BOOKS = gql`
     allBooks(genre: $genre) {
       title
       author {
-        name
-        born
-        bookCount
-        id
+        ...AuthorDetails
       }
       published
       genres
       id
     }
   }
+  ${AUTHOR_DETAILS}
 `
 
 const ADD_BOOK = gql`
@@ -60,26 +80,19 @@ const ADD_BOOK = gql`
       published: $published
       genres: $genres
     ) {
-      title
-      author {
-        name
-      }
-      published
-      genres
-      id
+      ...AddedBookDetails
     }
   }
+  ${ADDED_BOOK_DETAILS}
 `
 
 const EDIT_AUTHOR = gql`
   mutation editAuthor($name: String!, $born: Int!) {
     editAuthor(name: $name, setBornTo: $born) {
-      name
-      born
-      bookCount
-      id
+      ...AuthorDetails
     }
   }
+  ${AUTHOR_DETAILS}
 `
 
 const LOGIN = gql`
@@ -97,6 +110,15 @@ const ME = gql`
       favoriteGenre
     }
   }
+`
+
+const BOOK_ADDED = gql`
+  subscription {
+    bookAdded {
+      ...AddedBookDetails
+    }
+  }
+  ${ADDED_BOOK_DETAILS}
 `
 
 const App = () => {
@@ -150,6 +172,12 @@ const App = () => {
   const [login] = useMutation(LOGIN, {
     onError: handleError,
     onCompleted: () => setPage('authors')
+  })
+
+  useSubscription(BOOK_ADDED, {
+    onSubscriptionData: ({ subscriptionData }) => {
+      console.log(subscriptionData)
+    }
   })
 
   const logout = () => {
