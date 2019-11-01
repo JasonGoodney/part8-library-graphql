@@ -120,6 +120,18 @@ const BOOK_ADDED = gql`
   ${ADDED_BOOK_DETAILS}
 `
 
+const RECOMMENDED_BOOKS = gql`
+  query recommendedBooks($username: String!) {
+    recommendedBooks(username: $username) {
+      title
+      published
+      author {
+        name
+      }
+    }
+  }
+`
+
 const App = () => {
   const client = useApolloClient()
   const [token, setToken] = useState(null)
@@ -263,7 +275,7 @@ const App = () => {
         meQuery={meQuery}
         //favoriteGenre={meQuery.data.me.favoriteGenre}
         booksQuery={booksQuery}
-        // recommendedBooks={recommendedBooks}
+        recommendedBooksQuery={RECOMMENDED_BOOKS}
       />
 
       <LoginForm show={page === 'login'} login={login} setToken={setToken} />
