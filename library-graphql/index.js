@@ -151,6 +151,8 @@ const typeDefs = gql`
 
     allBooks(author: String, genre: String): [Book!]!
 
+    recommendedBooks(username: String!): [Book!]!
+
     allAuthors: [Author!]!
 
     findAuthor(name: String!): Author
@@ -214,6 +216,16 @@ const resolvers = {
     findAuthor: (root, args) => Author.findOne({ name: args.name }),
     me: (root, args, { currentUser }) => {
       return currentUser
+    },
+    recommendedBooks: async (root, args) => {
+      if (!args.username) {
+        return null
+      }
+
+      const user = await User.findOne({ username: args.username })
+      return Book.find({ genres: { $in: [user.favoriteGenre] } }).populate(
+        'author'
+      )
     }
   },
   Author: {
@@ -232,7 +244,7 @@ const resolvers = {
       }
       // Finds author in db
       let authorInDB = await Author.findOne({ name: args.author })
-
+      console.log('authorInDB', authorInDB)
       // If not create and save
       if (!authorInDB) {
         const author = new Author({ name: args.author })
@@ -240,7 +252,7 @@ const resolvers = {
       }
 
       const book = new Book({ ...args, author: authorInDB })
-
+      console.log('book', book)
       try {
         await book.save()
       } catch (error) {
