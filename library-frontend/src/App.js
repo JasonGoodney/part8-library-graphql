@@ -210,6 +210,21 @@ const App = () => {
             data: authorDataInStore
           })
         }
+        debugger
+        const recommendedDataInStore = client.readQuery({
+          query: RECOMMENDED_BOOKS,
+          variables: { username: meQuery.data.me.username }
+        })
+        debugger
+        if (!includedIn(recommendedDataInStore.recommendedBooks, book)) {
+          debugger
+          recommendedDataInStore.recommendedBooks.push(book)
+          client.writeQuery({
+            query: RECOMMENDED_BOOKS,
+            variables: { username: meQuery.data.me.username },
+            data: recommendedDataInStore
+          })
+        }
       }
     }
   }
