@@ -1,15 +1,30 @@
-import React from 'react'
+import React, { useState } from 'react'
+import { useApolloClient } from '@apollo/react-hooks'
 
 const Recommend = props => {
-  if (!props.show) {
+  const client = useApolloClient(props.recommendedBooksQuery)
+  const [recommendedBooks, setRecommendedBooks] = useState([])
+
+  const getBooks = async () => {
+    const { data } = await client.query({
+      query: props.recommendedBooksQuery,
+      variables: { username: props.meQuery.data.me.username }
+    })
+
+    setRecommendedBooks(data.recommendedBooks)
+  }
+
+  if (
+    !props.show ||
+    props.recommendedBooksQuery.loading ||
+    props.meQuery.loading
+  ) {
     return null
+  } else {
+    getBooks()
   }
 
   const me = props.meQuery.data.me
-
-  const recommendedBooks = props.booksQuery.data.allBooks.filter(b => {
-    return b.genres.includes(me.favoriteGenre)
-  })
 
   return (
     <div>
