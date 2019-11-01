@@ -12,20 +12,14 @@ const Author = require('./models/Author')
 const Book = require('./models/Book')
 const User = require('./models/User')
 const pubsub = new PubSub()
-const JWT_SECRET = 'skfnslfnslfnsfkslfnkslnfskdfnsl'
-
-// fJ3M0h00YSHKCxnV
-//mongodb+srv://fullstack:fJ3M0h00YSHKCxnV@cluster0-6haar.mongodb.net/test?retryWrites=true&w=majority
+const config = require('./utils/config')
 
 mongoose.set('useFindAndModify', false)
 
-const MONGODB_URI =
-  'mongodb+srv://fullstack:fJ3M0h00YSHKCxnV@cluster0-6haar.mongodb.net/test?retryWrites=true&w=majority'
-
-console.log('connecting to', MONGODB_URI)
+console.log('connecting to', config.MONGODB_URI)
 
 mongoose
-  .connect(MONGODB_URI, { useNewUrlParser: true })
+  .connect(config.MONGODB_URI, { useNewUrlParser: true })
   .then(() => {
     console.log('connected to MongoDB')
   })
@@ -304,7 +298,7 @@ const resolvers = {
         username: user.username,
         id: user._id
       }
-      return { value: jwt.sign(userForToken, JWT_SECRET) }
+      return { value: jwt.sign(userForToken, process.env.SECRET) }
     }
   },
   Subscription: {
@@ -320,7 +314,7 @@ const server = new ApolloServer({
   context: async ({ req }) => {
     const auth = req ? req.headers.authorization : null
     if (auth && auth.toLowerCase().startsWith('bearer ')) {
-      const decodedToken = jwt.verify(auth.substring(7), JWT_SECRET)
+      const decodedToken = jwt.verify(auth.substring(7), process.env.SECRET)
       const currentUser = await User.findById(decodedToken.id)
       return { currentUser }
     }
